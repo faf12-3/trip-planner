@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>智能旅行助手 · Hello-Agents 第 13 章</title>
+    <link rel="stylesheet" href="/style.css?v=28" />
+  </head>
+  <body>
+    <!-- 纯装饰：地图经纬网 + 天光。aria-hidden 且不吃点击 -->
+    <div class="bg" aria-hidden="true">
+      <!-- 航线：三条虚线 + 城市点 + 一架沿主航线巡航的飞机（SVG 原生动画，不耗主线程） -->
+      <svg class="bg-routes" viewBox="0 0 1440 760" preserveAspectRatio="xMidYMin slice"
+           xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+           focusable="false" aria-hidden="true">
+        <g class="routes">
+          <path id="route-main"
+                d="M-40 250 C 240 90, 520 60, 780 150 S 1240 300, 1480 180" />
+          <path d="M-60 404 C 220 300, 460 330, 700 420 S 1180 560, 1470 430" />
+          <path d="M120 64 C 320 180, 520 212, 760 192 S 1060 92, 1300 58" />
+        </g>
+        <g class="route-dots">
+          <circle cx="302" cy="106" r="3.2" />
+          <circle cx="780" cy="150" r="3.6" />
+          <circle cx="1240" cy="300" r="3.2" />
+          <circle cx="700" cy="420" r="3.2" />
+          <circle cx="1180" cy="520" r="2.6" />
+        </g>
+        <g class="plane">
+          <path d="M-7 0 L9 -5.2 L4.2 0 L9 5.2 Z" />
+          <animateMotion dur="30s" repeatCount="indefinite" rotate="auto" calcMode="linear">
+            <mpath href="#route-main" xlink:href="#route-main" />
+          </animateMotion>
+        </g>
+      </svg>
+    </div>
+
+    <header class="appbar">
+      <div class="appbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✈</span>
+          <div class="brand-text">
+            <h1>智能旅行助手</h1>
+            <p>高德地图 MCP · LangGraph 条件路由 · 一次 LLM 规划</p>
+          </div>
+        </div>
+        <div class="appbar-meta">
+          <span class="pill pill-readonly" id="share-banner" hidden></span>
+          <span class="pill">零构建</span>
+          <span class="pill pill-quiet">真实接口</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="col-main">
+        <section class="card form-card" id="form-card">
+          <header class="card-head">
+            <p class="eyebrow">新建行程</p>
+            <h2>规划一次旅行</h2>
+          </header>
+
+          <div class="form-grid">
+            <div class="field combo-field span-2">
+              <label for="city">目的地城市</label>
+              <div class="combo">
+                <input id="city" value="北京" placeholder="如：北京 / nj" autocomplete="off"
+                       role="combobox" aria-autocomplete="list" aria-controls="city-list"
+                       aria-expanded="false" />
+                <div class="city-list" id="city-list" role="listbox" hidden></div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="preferences">偏好</label>
+              <select id="preferences">
+                <option>历史文化</option>
+                <option>自然风光</option>
+                <option>美食</option>
+                <option>亲子</option>
+                <option>购物</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="budget_level">预算档位</label>
+              <select id="budget_level">
+                <option>穷游</option>
+                <option selected>中等</option>
+                <option>舒适</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="start_date">出发日期</label>
+              <input id="start_date" type="date" />
+            </div>
+            <div class="field">
+              <label for="end_date">结束日期</label>
+              <input id="end_date" type="date" />
+            </div>
+            <div class="field">
+              <label for="days">天数</label>
+              <input id="days" type="number" min="1" max="15" value="3" />
+            </div>
+            <div class="field">
+              <label for="transportation">交通方式</label>
+              <select id="transportation">
+                <option>公共交通</option>
+                <option>打车</option>
+                <option>自驾</option>
+                <option>步行</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="accommodation">住宿类型</label>
+              <select id="accommodation">
+                <option>经济型酒店</option>
+                <option>舒适型酒店</option>
+                <option>豪华型酒店</option>
+                <option>民宿</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="budget_total">总预算（元）<span class="field-hint">可留空</span></label>
+              <input id="budget_total" type="number" min="0" max="200000" step="100"
+                     inputmode="numeric" placeholder="如 2000" />
+            </div>
+            <div class="field span-all">
+              <label for="notes">其他要求<span class="field-hint">例如"想住舒适一点的酒店"</span></label>
+              <textarea id="notes" rows="2" maxlength="500"
+                        placeholder="例如：想住舒适一点的酒店；带老人，少走路；每天别排太满"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-primary" id="submit">开始规划</button>
+            <p class="form-hint">真实调用高德 MCP（15 个工具）+ LLM，通常 25~45 秒</p>
+          </div>
+
+          <div class="progress" id="progress" hidden>
+            <div class="bar"><i id="bar" style="width: 0%"></i></div>
+            <p id="status">准备中…</p>
+          </div>
+
+          <div class="error" id="error" hidden></div>
+        </section>
+
+        <!-- 生成结果后固定在顶部：编辑 / 导出 / 重新规划 -->
+        <div class="toolbar" id="toolbar" hidden></div>
+
+        <div id="copy-fallback" hidden></div>
+
+        <div id="share-host" hidden></div>
+
+        <div id="replan-host" hidden></div>
+
+        <div id="result"></div>
+      </main>
+
+      <aside class="col-side">
+        <!-- 记忆画像：后端按用户累计的偏好，可逐项删除 -->
+        <section class="card side-card" id="memory-card" hidden>
+          <header class="card-head">
+            <p class="eyebrow">长期记忆</p>
+            <h2>它记住了什么</h2>
+          </header>
+          <div id="memory-body"></div>
+          <p class="memory-note">点 × 删掉某一条，下次规划就不再参考它。</p>
+        </section>
+
+        <!-- 已保存的行程（刷新或重开浏览器后还能接着改） -->
+        <div id="recent-host"></div>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <span>零构建版本 · FastAPI 直接托管</span>
+      <span class="dot">·</span>
+      <span>数据来源：高德地图 MCP</span>
+      <span class="dot">·</span>
+      <span>配图 Unsplash</span>
+    </footer>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <div class="lightbox" id="lightbox" hidden>
+      <button class="lb-close" type="button" data-act="lightbox-close" aria-label="关闭">✕</button>
+      <img id="lightbox-img" alt="" />
+      <p class="lb-cap" id="lightbox-cap"></p>
+    </div>
+
+    <!-- 版本号防止浏览器用缓存；logic.js 是纯逻辑（有单测），app.js 负责渲染 -->
+    <script src="/logic.js?v=6"></script>
+    <script src="/app.js?v=28"></script>
+  </body>
+</html>
