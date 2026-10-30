@@ -2152,3 +2152,20 @@ body.share-mode .layout {
 .budget-warn > h2 {
   color: var(--danger);
 }
+
+/* 有结果但侧栏没内容：主栏铺满，别留一个 336px 的空洞 */
+.layout.no-side {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layout.no-side .col-side {
+  display: none;
+}
+
+/* 静态地图降级的说明文字 */
+.map-note {
+  margin: 8px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.6;
+}
