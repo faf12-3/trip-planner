@@ -69,7 +69,7 @@ def build_llm(env: dict[str, str]):
     base_url = env.get("LLM_BASE_URL", "")
     model = env.get("LLM_MODEL_ID", "gpt-4o-mini")
     if not api_key:
-        raise SystemExit("缺少 LLM_API_KEY（在 D:\\PRACTICE\\.env 里配置）")
+        raise SystemExit("缺少 LLM_API_KEY（在项目根目录 .env 或环境变量里配置）")
 
     kwargs: dict = {"model": model, "api_key": api_key, "temperature": 0.2}
     if base_url:
@@ -158,7 +158,7 @@ async def run(args: argparse.Namespace) -> int:
         if not key:
             raise SystemExit(
                 "缺少 AMAP_MAPS_API_KEY。请到 https://console.amap.com/ 创建"
-                "「Web 服务」类型的 Key，写进 D:\\PRACTICE\\.env"
+                "「Web 服务」类型的 Key，写进项目根目录 .env 或环境变量"
             )
         print(f"[env] 高德 MCP 传输方式：{args.transport}")
         # 同 API：整个请求共用一个会话，进入/退出必须在同一个 task

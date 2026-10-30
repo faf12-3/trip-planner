@@ -88,7 +88,7 @@ def _run_kwargs(transport: str = "streamable-http") -> tuple[dict[str, str], Any
     if not key:
         raise HTTPException(
             status_code=500,
-            detail="服务端缺少 AMAP_MAPS_API_KEY，请检查 D:\\PRACTICE\\.env",
+            detail="服务端缺少 AMAP_MAPS_API_KEY：请在后端环境变量或 .env 里配置",
         )
     return env, key
 

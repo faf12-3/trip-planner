@@ -50,6 +50,27 @@ Import 这个仓库即可，无需改构建命令。
 要真正上线，得把文件存储换成数据库（SQLite/Postgres），并把重排会话换成外部存储（Redis）。
 这部分**没有做**，README 里如实写着。
 
+## 部署到常驻平台（Railway / Render，推荐）
+
+Vercel 是 Serverless，单次请求有硬上限（免费计划 60 秒级），而一次规划需要 40~240 秒，
+**会在返回前被掐断**（浏览器看到 `ERR_CONNECTION_CLOSED`）。换到常驻平台就没有这个问题，
+而且内存会话、文件存储都能正常工作。
+
+### Railway（最快）
+
+1. https://railway.app → **New Project → Deploy from GitHub repo** → 选这个仓库
+2. Railway 会读 `Procfile` 自动起服务
+3. **Variables** 里加那 7 个环境变量（名字见 `.env.example`）
+4. Settings → **Generate Domain**，得到 `https://xxx.up.railway.app`
+
+### Render
+
+1. https://render.com → **New → Blueprint** → 选这个仓库（会读 `render.yaml`）
+2. 按提示填 `sync: false` 的那几个变量
+3. 部署完成后访问给出的域名
+
+两个平台都建议把 `TRIP_DATA_DIR` 指向持久卷；不配的话重启丢数据（和 Vercel 一样的限制）。
+
 ## 项目结构
 
 ```

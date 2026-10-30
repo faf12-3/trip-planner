@@ -1,0 +1,26 @@
+# Render 蓝图：连上 GitHub 后它自己读这个文件建服务
+services:
+  - type: web
+    name: trip-planner
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # 下面这些请在 Render 后台填值，不要写进仓库
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_MODEL_ID
+        sync: false
+      - key: AMAP_MAPS_API_KEY
+        sync: false
+      - key: AMAP_JS_KEY
+        sync: false
+      - key: AMAP_JS_SECURITY_CODE
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
