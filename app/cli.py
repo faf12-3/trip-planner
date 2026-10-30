@@ -19,6 +19,25 @@ from app.graph import build_graph
 from app.models import TripPlan, TripRequest
 
 
+# 项目认识的环境变量全集。新增变量时**必须**登记在这里，
+# 否则部署到只有环境变量（没有 .env 文件）的平台就读不到。
+# 测试会拿 .env.example 与它比对，漏登记会红。
+PROJECT_ENV_KEYS: frozenset[str] = frozenset({
+    "LLM_API_KEY",
+    "LLM_BASE_URL",
+    "LLM_MODEL_ID",
+    "AMAP_MAPS_API_KEY",
+    "AMAP_JS_KEY",
+    "AMAP_JS_SECURITY_CODE",
+    "UNSPLASH_ACCESS_KEY",
+    "TAVILY_API_KEY",
+    "TRIP_DATA_DIR",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+})
+
+
 def load_env() -> dict[str, str]:
     """读工作区 .env（不引额外依赖）。已存在的真实环境变量优先。"""
     candidates = [
@@ -35,7 +54,11 @@ def load_env() -> dict[str, str]:
                 continue
             k, _, v = line.partition("=")
             env.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    env.update({k: v for k, v in os.environ.items() if k in {"LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL_ID", "AMAP_MAPS_API_KEY", "HTTP_PROXY", "HTTPS_PROXY"}})
+    # 真实环境变量优先于 .env 文件（部署平台只有环境变量，没有文件）。
+    # 这里按"项目认识的全部变量"取值，而不是只认写死的那几个——
+    # 之前漏了 AMAP_JS_KEY / AMAP_JS_SECURITY_CODE / UNSPLASH_ACCESS_KEY，
+    # 本地读 .env 看不出问题，一部署地图就降级成静态图。
+    env.update({k: os.environ[k] for k in PROJECT_ENV_KEYS if k in os.environ})
     return env
 
 
