@@ -170,8 +170,13 @@ async function renderMap() {
   const AMap = await ensureAmap().catch(() => null);
 
   if (!AMap) {
+    // 没拿到 JS Key（或域名不在白名单）时降级成静态图。
+    // 但**必须说出来**：否则用户以为"地图坏了"，排查时也看不出是配置问题。
     host.innerHTML =
-      '<img id="static-map" class="zoomable" alt="行程地图" style="width:100%;border-radius:10px" />';
+      '<img id="static-map" class="zoomable" alt="行程地图" ' +
+      'style="width:100%;max-width:100%;display:block;border-radius:10px" />' +
+      '<p class="map-note">交互地图不可用（未配置 JS Key 或域名未加白），' +
+      '已改用静态地图；打印 / 存 PDF 用的也是它。</p>';
     await setStaticMap(points);
     return;
   }
@@ -2107,6 +2112,11 @@ function syncEmptyLayout() {
   const sideHasContent =
     !!document.querySelector('#memory-card:not([hidden])') ||
     document.querySelectorAll('.recent-item').length > 0;
+
+  // 两种"单列"要分开：
+  //   no-side  —— 有结果但侧栏没东西（新部署、没有历史行程）：主栏铺满，不留空洞
+  //   is-empty —— 连结果都没有：收成窄栏居中，更像一个"入口"
+  layout.classList.toggle('no-side', !sideHasContent);
   layout.classList.toggle('is-empty', !state.plan && !sideHasContent);
 }
 
